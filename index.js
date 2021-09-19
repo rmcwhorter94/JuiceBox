@@ -5,10 +5,10 @@ const server = express();
 
 const bodyParser = require("body-parser");
 server.use(bodyParser.json());
-
+server.use(express.urlencoded({ extended: true }));
 const morgan = require("morgan");
 server.use(morgan("dev"));
-
+server.use(express.json());
 server.use((req, res, next) => {
   if (!req.headers.authorization) {
     return next();

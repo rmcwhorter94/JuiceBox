@@ -1,7 +1,6 @@
 const express = require("express");
 const usersRouter = express.Router();
 const jwt = require("jsonwebtoken");
-const { JWT_SECRET } = process.env;
 const { getAllUsers, getUserByUsername, createUser } = require("../db");
 
 usersRouter.get("/", async (req, res) => {
@@ -32,7 +31,7 @@ usersRouter.post("/login", async (req, res, next) => {
         { username: user.username, id: user.id },
         process.env.JWT_SECRET
       );
-      res.send([token]);
+      res.send({ token });
       // res.send({ message: "you're logged in!" });
     } else {
       next({
@@ -73,7 +72,7 @@ usersRouter.post("/login", async (req, res, next) => {
 //         message: "Username or password is incorrect",
 //       });
 //     }
-usersRouter.post("/register", async (req, res) => {
+usersRouter.post("/register", async (req, res, next) => {
   const { username, password, name, location } = req.body;
 
   try {
@@ -85,7 +84,7 @@ usersRouter.post("/register", async (req, res) => {
         message: "User already exists",
       });
     }
-    const user = await CreateUser({
+    const user = await createUser({
       username,
       password,
       name,
@@ -97,7 +96,7 @@ usersRouter.post("/register", async (req, res) => {
         id: user.id,
         username,
       },
-      JWT_SECRET,
+      process.env.JWT_SECRET,
       {
         expiresIn: "1w",
       }

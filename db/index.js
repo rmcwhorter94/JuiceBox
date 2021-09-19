@@ -7,10 +7,6 @@ const client = new Client({
   password: "Slapdick!123",
 });
 
-/**
- * USER Methods
- */
-
 async function createUser({ username, password, name, location }) {
   try {
     const {
@@ -32,12 +28,10 @@ async function createUser({ username, password, name, location }) {
 }
 
 async function updateUser(id, fields = {}) {
-  // build the set string
   const setString = Object.keys(fields)
     .map((key, index) => `"${key}"=$${index + 1}`)
     .join(", ");
 
-  // return early if this is called without fields
   if (setString.length === 0) {
     return;
   }
@@ -96,10 +90,6 @@ async function getUserById(userId) {
   }
 }
 
-/**
- * POST Methods
- */
-
 async function createPost({ authorId, title, content, tags = [] }) {
   try {
     const {
@@ -122,17 +112,14 @@ async function createPost({ authorId, title, content, tags = [] }) {
 }
 
 async function updatePost(postId, fields = {}) {
-  // read off the tags & remove that field
-  const { tags } = fields; // might be undefined
+  const { tags } = fields;
   delete fields.tags;
 
-  // build the set string
   const setString = Object.keys(fields)
     .map((key, index) => `"${key}"=$${index + 1}`)
     .join(", ");
 
   try {
-    // update any fields that need to be updated
     if (setString.length > 0) {
       await client.query(
         `
@@ -145,16 +132,13 @@ async function updatePost(postId, fields = {}) {
       );
     }
 
-    // return early if there's no tags to update
     if (tags === undefined) {
       return await getPostById(postId);
     }
 
-    // make any new tags that need to be made
     const tagList = await createTags(tags);
     const tagListIdString = tagList.map((tag) => `${tag.id}`).join(", ");
 
-    // delete any post_tags from the database which aren't in that tagList
     await client.query(
       `
       DELETE FROM post_tags
@@ -165,7 +149,6 @@ async function updatePost(postId, fields = {}) {
       [postId]
     );
 
-    // and create post_tags as necessary
     await addTagsToPost(postId, tagList);
 
     return await getPostById(postId);
@@ -212,20 +195,27 @@ async function getPostById(postId) {
       rows: [post],
     } = await client.query(
       `
-      SELECT *
-      FROM posts
-      WHERE id=$1;
-    `,
+        SELECT *
+        FROM posts
+        WHERE id=$1;
+      `,
       [postId]
     );
 
+    if (!post) {
+      throw {
+        name: "PostNotFoundError",
+        message: "Could not find a post with that postId",
+      };
+    }
+
     const { rows: tags } = await client.query(
       `
-      SELECT tags.*
-      FROM tags
-      JOIN post_tags ON tags.id=post_tags."tagId"
-      WHERE post_tags."postId"=$1;
-    `,
+        SELECT tags.*
+        FROM tags
+        JOIN post_tags ON tags.id=post_tags."tagId"
+        WHERE post_tags."postId"=$1;
+      `,
       [postId]
     );
 
@@ -233,10 +223,10 @@ async function getPostById(postId) {
       rows: [author],
     } = await client.query(
       `
-      SELECT id, username, name, location
-      FROM users
-      WHERE id=$1;
-    `,
+        SELECT id, username, name, location
+        FROM users
+        WHERE id=$1;
+      `,
       [post.authorId]
     );
 
@@ -250,7 +240,6 @@ async function getPostById(postId) {
     throw error;
   }
 }
-
 async function getUserByUsername(username) {
   try {
     const {
